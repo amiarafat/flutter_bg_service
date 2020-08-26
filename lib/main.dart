@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -25,6 +26,8 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  String timer = "Start Service";
+
 
   void startServiceInPlatform() async{
 
@@ -32,13 +35,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
       var methodChannel = MethodChannel("com.example.flutter_app_bg_services");
       String data  = await methodChannel.invokeMethod("startService");
-      debugPrint(data);
-
-      var eventChannel = EventChannel("locationStatusStream");
-      eventChannel.receiveBroadcastStream().listen((event) {
-
-        print(event);
-      });
+      debugPrint("M Channel: "+data);
 
     }
 
@@ -54,7 +51,7 @@ class _MyHomePageState extends State<MyHomePage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             RaisedButton(
-              child: Text("Start Background"),
+              child: Text(timer),
               onPressed: (){
                 startServiceInPlatform();
               },

@@ -1,8 +1,10 @@
 package com.example.flutter_app_bg_services;
 
 import android.Manifest;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
@@ -15,17 +17,29 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 
+import java.util.stream.Stream;
+
 import io.flutter.embedding.android.FlutterActivity;
+import io.flutter.embedding.engine.FlutterEngine;
 import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.plugin.common.EventChannel;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.PluginRegistry;
+import io.flutter.plugins.GeneratedPluginRegistrant;
 
 public class MainActivity extends FlutterActivity {
 
+    private static final String STREAM = "com.example.flutter_app_bg_services/timer";
+    private static final String TAG = MainActivity.class.getSimpleName();
     Intent forService;
-    int count = 0;
+
+    Intent intent;
+    long timeSwapBuff = 0L;
+    long updatedTime = 0L;
+
+    EventChannel channel;
+    private int time;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -39,59 +53,11 @@ public class MainActivity extends FlutterActivity {
 
                 if (call.method.endsWith("startService")) {
                     startService();
-                    result.success("Value: ");
-
+                    result.success("Value: "+time);
                 }
             }
         });
 
-
-        new EventChannel(getFlutterView(),"locationStatusStream").setStreamHandler(new EventChannel.StreamHandler() {
-            @Override
-            public void onListen(Object object, EventChannel.EventSink events) {
-
-                LocationListener listener = new LocationListener() {
-                    @Override
-                    public void onLocationChanged(Location location) {
-
-                        Log.d("loc",location.getLatitude()+ "---"+ location.getLongitude());
-                        events.success(Log.d("loc",location.getLatitude()+ "---"+ location.getLongitude()));
-                    }
-
-                    @Override
-                    public void onStatusChanged(String s, int i, Bundle bundle) {
-
-                    }
-
-                    @Override
-                    public void onProviderEnabled(String s) {
-
-                    }
-
-                    @Override
-                    public void onProviderDisabled(String s) {
-
-                    }
-                };
-
-                LocationManager locationManager = (LocationManager) getApplicationContext().getSystemService(Context.LOCATION_SERVICE);
-                if (ActivityCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                    // TODO: Consider calling
-                    //    ActivityCompat#requestPermissions
-                    // here to request the missing permissions, and then overriding
-                    //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                    //                                          int[] grantResults)
-                    // to handle the case where the user grants the permission. See the documentation
-                    // for ActivityCompat#requestPermissions for more details.
-                    return;
-                }
-                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000, 10f, listener);
-            }
-            @Override
-            public void onCancel(Object arguments) {
-
-            }
-        });
     }
 
     BinaryMessenger getFlutterView() {
@@ -105,12 +71,49 @@ public class MainActivity extends FlutterActivity {
         } else {
             startService(forService);
         }
+
+        registerReceiver(broadcastReceiver, new IntentFilter(MyService.BROADCAST_ACTION));
+    }
+
+
+    private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+
+            updateUI(intent);
+        }
+    };
+
+    private void updateUI(Intent intent) {
+        time = intent.getIntExtra("time", 0);
+        Log.d("Hello", "Time " + time);
+
+        int mins = time / 60;
+        int secs = time % 60;
+
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        stopService(forService);
+        //stopService(forService);
+        unregisterReceiver(broadcastReceiver);
     }
 
+    @Override
+    protected void onStop() {
+        super.onStop();
+        startService();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+
+        if(broadcastReceiver != null){
+
+            registerReceiver(broadcastReceiver, new IntentFilter(MyService.BROADCAST_ACTION));
+        }
+    }
 }
