@@ -17,6 +17,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 
+import java.util.Observable;
+import java.util.Observer;
 import java.util.stream.Stream;
 
 import io.flutter.embedding.android.FlutterActivity;
@@ -33,12 +35,6 @@ public class MainActivity extends FlutterActivity {
     private static final String STREAM = "com.example.flutter_app_bg_services/timer";
     private static final String TAG = MainActivity.class.getSimpleName();
     Intent forService;
-
-    Intent intent;
-    long timeSwapBuff = 0L;
-    long updatedTime = 0L;
-
-    EventChannel channel;
     private int time;
 
     @Override
@@ -81,6 +77,7 @@ public class MainActivity extends FlutterActivity {
         public void onReceive(Context context, Intent intent) {
 
             updateUI(intent);
+
         }
     };
 
@@ -116,4 +113,6 @@ public class MainActivity extends FlutterActivity {
             registerReceiver(broadcastReceiver, new IntentFilter(MyService.BROADCAST_ACTION));
         }
     }
+
+
 }
